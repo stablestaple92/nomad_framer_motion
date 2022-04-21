@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { AnimatePresence, motion, useMotionValue, useTransform, useViewportScroll } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 
 const Wrapper = styled(motion.div)`
@@ -116,6 +116,102 @@ const Button = styled.button`
   border-radius: 15px;
 `
 
+const boxVariants2 = {
+  initial: {
+    opacity: 0,
+    scale: 0,
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    rotateZ: 360,
+  },
+  leaving: {
+    opacity: 0,
+    y: 50,
+  }
+}
+
+
+const SlideBox = styled(motion.div)`
+  width: 300px;
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 10px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1), 0 10px 20px rgba(0, 0, 0, 0.05);
+`;
+
+
+
+const slideBox = {
+  entry: (isBack:boolean) => ({
+    x: isBack ? -500 : 500,
+    opacity: 0,
+    scale: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.2
+    }
+  },
+  exit: (isBack:boolean) => ({
+    x: isBack ? 500 : -500,
+    opacity: 0,
+    scale: 0,
+    transition: {
+      duration: 0.2
+    }
+  })
+}
+/*
+  custom
+    각 애니메이션 컴포넌트에 대해 동적 variants를 다르게 적용할 때 사용할 수 있는 사용자 지정 데이터입니다.
+    custom은 variants를 object를 return해주어야합니다
+
+  exitBeforeEnter
+    true로 설정하면 AnimatePresence는 한 번에 하나의 컴포넌트만 랜더링합니다.
+    exiting중인 컴포넌트는 entering하는 컴포넌트가 렌더링되기 전에 exit 애니메이션을 완료합니다.
+*/
+
+const GridWrapper = styled.div`
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+`;
+
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 50vw;
+  gap: 10px;
+  div:first-child,
+  div:last-child {
+    grid-column: span 2;
+  }
+`;
+
+const GridBox = styled(motion.div)`
+  height: 200px;
+  border-radius: 40px;
+  background-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1), 0 10px 20px rgba(0, 0, 0, 0.05);
+`;
+
+const Overlay = styled(motion.div)`
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
 function App() {
   const biggerBoxRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
@@ -155,66 +251,25 @@ function App() {
    * 이 컴포넌트가 트리에서 제거될 때 애니메이션할 대상입니다.
    * 
    */
+   const [visible, setVisible] = useState(1);
+   const [back, setBack] = useState(false);
+   const nextPlease = () => {
+     setBack(false);
+     setVisible(prev => prev === 10 ? 10 : prev + 1);
+   };
+   const prevPlease = () => {
+     setBack(true);
+     setVisible(prev => prev === 1 ? 1 : prev - 1);
+   }
+
+
   const [showing, setShowing] = useState(false);
   const toggleShowing = () => {
     setShowing(prev => !prev);
   }
-  const boxVariants2 = {
-    initial: {
-      opacity: 0,
-      scale: 0,
-    },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      rotateZ: 360,
-    },
-    leaving: {
-      opacity: 0,
-      y: 50,
-    }
-  }
+  
+  const [id, setId] = useState<null | string>(null);
 
-
-  const SlideBox = styled(motion.div)`
-    width: 300px;
-    height: 150px;
-    top: 170vh;
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: rgba(255, 255, 255, 1);
-    border-radius: 10px;
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1), 0 10px 20px rgba(0, 0, 0, 0.05);
-  `;
-  const [visible, setVisible] = useState(1);
-  const nextPlease = () => setVisible(prev => prev === 10 ? 10 : prev + 1);
-  const prevPlease = () => setVisible(prev => prev === 1 ? 1 : prev - 1);
-
-  const slideBox = {
-    invisible: {
-      x: 500,
-      opacity: 0,
-      scale: 0,
-    },
-    visible: {
-      x: 0,
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 1
-      }
-    },
-    exit: {
-      x: -500,
-      opacity: 0,
-      scale: 0,
-      transition: {
-        duration: 1
-      }
-    }
-  }
   return (
     <Wrapper style={{ background: gradient }}>
       <Box1 variants={myVars} initial="start" animate="end" />
@@ -265,21 +320,43 @@ function App() {
       </AnimatePresence>
       <Button onClick={prevPlease}>Prev</Button>
       <Button onClick={nextPlease}>Next</Button>
-      <AnimatePresence>
-
+      <AnimatePresence exitBeforeEnter custom={back}>
         <SlideBox
+          custom={back}
           variants={slideBox}
-          initial="invisible"
-          animate="visible"
+          initial="entry"
+          animate="center"
           exit="exit"
           key={visible}
         >
           {visible}
         </SlideBox>
-        
       </AnimatePresence>
-    </Wrapper>
 
+      <GridWrapper>
+        <Grid>
+          {["1", "2", "3", "4"].map(n => (
+            <GridBox 
+              onClick={() => setId(n)}
+              key={n}
+              layoutId={n} />
+          )
+        )}
+        </Grid>
+        <AnimatePresence>
+          {id ? (
+            <Overlay 
+              onClick={() => setId(null)}
+              initial={{ backgroundColor: "rgba(0, 0, 0, 0)" }}
+              animate={{ backgroundColor: "rgba(0, 0, 0, 0.7)" }}
+              exit={{ backgroundColor: "rgba(0, 0, 0, 0)" }}
+            >
+              <GridBox layoutId={id} style={{width: 400, height: 200}}/>
+            </Overlay>
+          ) : null}
+        </AnimatePresence>
+      </GridWrapper>
+    </Wrapper>
   );
 }
 
